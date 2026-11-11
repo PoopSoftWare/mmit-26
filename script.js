@@ -1,5 +1,4 @@
-// script.js — Mister MM · "Azzurro Italia"
-// API-слой и механика полностью сохранены.
+// script.js — Мистер М · "Azzurro Italia"
 // ---------------------------------------------------------------------------
 // Telegram WebApp init
 // ---------------------------------------------------------------------------
@@ -11,7 +10,7 @@ if (tg && !isFallbackMode) {
     tg.expand && tg.expand();
     tg.setHeaderColor && tg.setHeaderColor("#060b16");
     tg.setBackgroundColor && tg.setBackgroundColor("#060b16");
-  } catch (e) { console.error("Telegram WebApp init error:", e); }
+  } catch (e) { console.error("Telegram WebApp init error: ", e); }
 }
 function haptic(style = "light") {
   if (tg && tg.HapticFeedback && !isFallbackMode) {
@@ -65,7 +64,7 @@ const API = {
     try {
       const data = await fetchJSON(url);
       if (data.results && data.results.length > 0) return data.results.map(mapRawgGame).map(g => ({ ...g, tag: "new" }));
-    } catch (e) { console.error("newReleases failed:", e); }
+    } catch (e) { console.error("newReleases failed: ", e); }
     try {
       const fallbackUrl = `${RAWG_BASE}/games?key=${RAWG_KEY}&ordering=-rating&page_size=20&page=${page}`;
       const data = await fetchJSON(fallbackUrl);
@@ -100,7 +99,7 @@ const API = {
     try {
       const data = await fetchJSON(url, 6000);
       return data.map(mapGamerpowerGame);
-    } catch (e) { console.warn("GamerPower direct fetch failed, trying proxy:", e); }
+    } catch (e) { console.warn("GamerPower direct fetch failed, trying proxy: ", e); }
     try {
       const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
       const data = await fetchJSON(proxyUrl, 8000);
@@ -173,23 +172,23 @@ const API = {
         const data = await fetchJSON(rss2jsonUrl, 5000);
         if (data.status === "ok" && data.items) {
           data.items.slice(0, 6).forEach(item => {
-            const rawText = item.content || item.description || "";
+            const rawText = item.content || item.description || " ";
             const withBreaks = rawText
               .replace(/<\/(p|div|li|h[1-6])>/gi, "\n\n")
               .replace(/<br\s*\/?>/gi, "\n")
-              .replace(/<[^>]*>/g, " ");
+              .replace(/<[^>]*>/g, "  ");
             const cleanText = withBreaks.replace(/\n{3,}/g, "\n\n").replace(/[ \t]+/g, " ").trim();
             const flatSummary = cleanText.replace(/\s+/g, " ").trim();
-            if (!isGameRelated(item.title || "", flatSummary)) return;
-            let sourceHost = "";
-            try { sourceHost = new URL(feed.url).hostname.replace(/^www\./, ""); } catch (e) {}
+            if (!isGameRelated(item.title || " ", flatSummary)) return;
+            let sourceHost = " ";
+            try { sourceHost = new URL(feed.url).hostname.replace(/^www./, " "); } catch (e) {}
             allNews.push({
               id: item.link || item.guid || `${feed.url}-${item.title}`,
               title: item.title || "Senza titolo",
               summary: flatSummary.slice(0, 150),
               content: cleanText,
               link: item.link || "#",
-              image: item.thumbnail || (item.enclosure && item.enclosure.link) || "",
+              image: item.thumbnail || (item.enclosure && item.enclosure.link) || " ",
               published: item.pubDate || new Date().toISOString(),
               lang: feed.lang,
               source: sourceHost
@@ -205,11 +204,10 @@ const API = {
     }).sort((a, b) => new Date(b.published) - new Date(a.published)).slice(0, 15);
   },
   async home() {
-    const [newReleases, freeGames, hotDeals, news] = await Promise.allSettled([
-      this.newReleases(), this.freeGames(), this.hotDeals(), this.news()
+    const [freeGames, hotDeals, news] = await Promise.allSettled([
+      this.freeGames(), this.hotDeals(), this.news()
     ]);
     return {
-      new_releases: newReleases.status === "fulfilled" ? newReleases.value.slice(0, 6) : [],
       free_games: freeGames.status === "fulfilled" ? freeGames.value.slice(0, 6) : [],
       hot_deals: hotDeals.status === "fulfilled" ? hotDeals.value.slice(0, 6) : [],
       news: news.status === "fulfilled" ? news.value.slice(0, 3) : []
@@ -243,45 +241,45 @@ function isGameRelated(title, summary) {
 // Mappers
 // ---------------------------------------------------------------------------
 function mapRawgGame(game) {
-  const stores = (game.stores || []).map(s => ({ id: s.store.id, name: s.store.name, url: s.url || "" }));
+  const stores = (game.stores || []).map(s => ({ id: s.store.id, name: s.store.name, url: s.url || " " }));
   return {
     id: game.id,
     title: game.name || "Sconosciuto",
-    image: game.background_image || "",
+    image: game.background_image || " ",
     url: `https://rawg.io/games/${game.slug}`,
     genres: game.genres ? game.genres.map(g => g.name) : [],
     rating: game.rating || 0,
-    released: game.released ? game.released.slice(0, 4) : "",
-    description: game.description_short || game.description || "",
+    released: game.released ? game.released.slice(0, 4) : " ",
+    description: game.description_short || game.description || " ",
     metacritic: game.metacritic || null,
     platforms: game.platforms ? game.platforms.map(p => p.platform.name) : [],
     stores
   };
 }
-function gamerpowerLink(item) { return item.open_giveaway_url || item.open_url || item.gamerpower_url || ""; }
+function gamerpowerLink(item) { return item.open_giveaway_url || item.open_url || item.gamerpower_url || " "; }
 function mapGamerpowerGame(item) {
   const link = gamerpowerLink(item);
   const allStores = detectAllStoresFromGamerpower(item, link);
-  const primary = allStores[0] || { name: item.platforms || "PC", url: link, cls: "", icon: "◆" };
+  const primary = allStores[0] || { name: item.platforms || "PC", url: link, cls: " ", icon: "◆" };
   return {
     id: item.id, title: item.title || "Sconosciuto",
-    image: item.image || item.thumbnail || "", url: link,
+    image: item.image || item.thumbnail || " ", url: link,
     genres: item.type ? [item.type] : [],
     price: item.worth || "0",
     store: primary.name, storeUrl: primary.url, storeClass: primary.cls, storeIcon: primary.icon,
     stores: allStores, tag: "free",
     salePrice: "0", normalPrice: item.worth || "0",
-    description: item.description || "", instructions: item.instructions || "",
+    description: item.description || " ", instructions: item.instructions || " ",
     platforms: item.platforms ? [item.platforms] : []
   };
 }
 function mapEpicGame(el) {
   const images = el.keyImages || [];
-  const image = (images.find(i => i.type === "OfferImageWide") || images.find(i => i.type === "Thumbnail") || images[0] || {}).url || "";
+  const image = (images.find(i => i.type === "OfferImageWide") || images.find(i => i.type === "Thumbnail") || images[0] || {}).url || " ";
   const slug = el.productSlug
     || (el.offerMappings && el.offerMappings[0] && el.offerMappings[0].pageSlug)
     || (el.catalogNs && el.catalogNs.mappings && el.catalogNs.mappings[0] && el.catalogNs.mappings[0].pageSlug)
-    || "";
+    || " ";
   const url = slug ? `https://store.epicgames.com/it/p/${slug}` : "https://store.epicgames.com/it/free-games";
   const normalCents = el.price && el.price.totalPrice ? el.price.totalPrice.originalPrice : 0;
   const normalPrice = normalCents ? (normalCents / 100).toFixed(2) : "0";
@@ -291,17 +289,17 @@ function mapEpicGame(el) {
     title: el.title || "Sconosciuto", image, url, genres: [],
     price: normalPrice, store: store.name, storeUrl: url, storeClass: store.cls, storeIcon: store.icon,
     stores: [store], tag: "free", salePrice: "0", normalPrice,
-    description: stripHTML(el.description || ""), instructions: "", platforms: ["PC"]
+    description: stripHTML(el.description || " "), instructions: " ", platforms: ["PC"]
   };
 }
 function matchStoreByUrl(urlLower) {
   if (urlLower.includes("steampowered.com")) return { name: "Steam", cls: "steam", icon: "◆" };
   if (urlLower.includes("epicgames.com")) return { name: "Epic Games", cls: "epic", icon: "◆" };
   if (urlLower.includes("gog.com")) return { name: "GOG", cls: "gog", icon: "◆" };
-  if (urlLower.includes("humblebundle.com")) return { name: "Humble Bundle", cls: "", icon: "◆" };
-  if (urlLower.includes("origin.com") || urlLower.includes("ea.com")) return { name: "EA App", cls: "", icon: "◆" };
-  if (urlLower.includes("ubisoft.com") || urlLower.includes("uplay")) return { name: "Ubisoft Connect", cls: "", icon: "◆" };
-  if (urlLower.includes("itch.io")) return { name: "itch.io", cls: "", icon: "◆" };
+  if (urlLower.includes("humblebundle.com")) return { name: "Humble Bundle", cls: " ", icon: "◆" };
+  if (urlLower.includes("origin.com") || urlLower.includes("ea.com")) return { name: "EA App", cls: " ", icon: "◆" };
+  if (urlLower.includes("ubisoft.com") || urlLower.includes("uplay")) return { name: "Ubisoft Connect", cls: " ", icon: "◆" };
+  if (urlLower.includes("itch.io")) return { name: "itch.io", cls: " ", icon: "◆" };
   return null;
 }
 function detectAllStoresFromGamerpower(item, link) {
@@ -315,20 +313,20 @@ function detectAllStoresFromGamerpower(item, link) {
   const openUrl = link !== undefined ? link : gamerpowerLink(item);
   const primaryMatch = matchStoreByUrl(openUrl.toLowerCase());
   if (primaryMatch) add(primaryMatch, openUrl);
-  const platformsStr = (item.platforms || "").toLowerCase();
+  const platformsStr = (item.platforms || " ").toLowerCase();
   if (stores.length === 0) {
     if (platformsStr.includes("epic")) add({ name: "Epic Games", cls: "epic", icon: "◆" }, openUrl);
     else if (platformsStr.includes("steam")) add({ name: "Steam", cls: "steam", icon: "◆" }, openUrl);
     else if (platformsStr.includes("gog")) add({ name: "GOG", cls: "gog", icon: "◆" }, openUrl);
-    else if (platformsStr.includes("itch")) add({ name: "itch.io", cls: "", icon: "◆" }, openUrl);
+    else if (platformsStr.includes("itch")) add({ name: "itch.io", cls: " ", icon: "◆" }, openUrl);
   }
-  if (stores.length === 0) add({ name: item.platforms || "PC", cls: "", icon: "◆" }, openUrl);
+  if (stores.length === 0) add({ name: item.platforms || "PC", cls: " ", icon: "◆" }, openUrl);
   return stores;
 }
 function mapCheapsharkDeal(deal) {
-  let directUrl = "";
+  let directUrl = " ";
   let storeName = "Store";
-  let storeCls = "";
+  let storeCls = " ";
   if (deal.gameInfo) {
     if (deal.gameInfo.steamAppID && deal.gameInfo.steamAppID !== "0") {
       directUrl = `https://store.steampowered.com/app/${deal.gameInfo.steamAppID}/`;
@@ -344,11 +342,11 @@ function mapCheapsharkDeal(deal) {
   }
   return {
     id: deal.dealID, title: deal.title || "Sconosciuto",
-    image: deal.thumb || "", url: directUrl, genres: [],
+    image: deal.thumb || " ", url: directUrl, genres: [],
     rating: parseFloat(deal.metacriticScore) / 10 || 0,
     store: storeName, storeClass: storeCls, tag: "deal",
     salePrice: deal.salePrice || "0", normalPrice: deal.normalPrice || "0",
-    savings: deal.savings || 0, description: "",
+    savings: deal.savings || 0, description: " ",
     metacritic: deal.metacriticScore ? parseInt(deal.metacriticScore) : null
   };
 }
@@ -364,17 +362,17 @@ function getStoreNameCheapShark(storeID) {
 // Text helpers
 // ---------------------------------------------------------------------------
 function escapeHTML(str) {
-  return String(str == null ? "" : str)
+  return String(str == null ? " " : str)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 const escapeAttr = escapeHTML;
 function decodeEntities(str) {
   const ta = document.createElement("textarea");
-  ta.innerHTML = str || "";
+  ta.innerHTML = str || " ";
   return ta.value;
 }
-function stripHTML(html) { return decodeEntities((html || "").replace(/<[^>]*>/g, " ")).replace(/\s+/g, " ").trim(); }
+function stripHTML(html) { return decodeEntities((html || " ").replace(/<[^>]*>/g, "  ")).replace(/\s+/g, " ").trim(); }
 const NON_LATIN_SCRIPT_RE = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uac00-\ud7af\u0600-\u06ff\u0e00-\u0e7f]/g;
 function isWrongLanguage(text) {
   if (!text) return false;
@@ -395,34 +393,34 @@ function bestDescription(detail, fallbackGame) {
   if (full && !isWrongLanguage(full)) return truncateAtBoundary(full, 500);
   const short = stripHTML((detail && detail.description_short) || (fallbackGame && fallbackGame.description));
   if (short && !isWrongLanguage(short)) return truncateAtBoundary(short, 500);
-  return "";
+  return " ";
 }
 function formatArticleHTML(text) {
-  const paragraphs = (text || "").split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
+  const paragraphs = (text || " ").split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
   if (paragraphs.length === 0) return "<p>Contenuto non disponibile.</p>";
-  return paragraphs.map(p => `<p>${escapeHTML(p)}</p>`).join("");
+  return paragraphs.map(p => `<p>${escapeHTML(p)}</p>`).join(" ");
 }
 function readingTimeMinutes(text) {
-  const words = (text || "").trim().split(/\s+/).filter(Boolean).length;
+  const words = (text || " ").trim().split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.round(words / 200));
 }
 function formatDate(dateStr) {
-  if (!dateStr) return "";
+  if (!dateStr) return " ";
   try {
     const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return "";
+    if (isNaN(d.getTime())) return " ";
     return d.toLocaleDateString("it-IT", { day: "numeric", month: "short" });
-  } catch (e) { return ""; }
+  } catch (e) { return " "; }
 }
 // ---------------------------------------------------------------------------
 // Rendering
 // ---------------------------------------------------------------------------
-const TAG_LABEL = { new: "Novità", free: "Gratis", deal: "Offerta", discover: "" };
-const TAG_CLASS = { new: "", free: "tag-free", deal: "tag-deal", discover: "" };
+const TAG_LABEL = { new: "Novità", free: "Gratis", deal: "Offerta", discover: " " };
+const TAG_CLASS = { new: " ", free: "tag-free", deal: "tag-deal", discover: " " };
 const PLACEHOLDER_GRADIENT = "linear-gradient(135deg, rgba(61,155,255,0.14), rgba(47,212,143,0.10))";
 function priceLine(game) {
   if (game.tag === "free") {
-    const worth = parseFloat(String(game.price || "").replace(/[^0-9.]/g, ""));
+    const worth = parseFloat(String(game.price || " ").replace(/[^0-9.]/g, " "));
     return worth > 0 ? `Gratis <s>€${worth.toFixed(2)}</s>` : "Gratis";
   }
   if (game.tag === "deal") {
@@ -430,13 +428,13 @@ function priceLine(game) {
     const normal = parseFloat(game.normalPrice);
     if (!isNaN(sale) && !isNaN(normal) && normal > 0) {
       const save = parseFloat(game.savings);
-      const pill = save > 0 ? `<em class="save-pill">-${Math.round(save)}%</em>` : "";
+      const pill = save > 0 ? `<em class="save-pill">-${Math.round(save)}%</em>` : " ";
       return `€${sale.toFixed(2)} <s>€${normal.toFixed(2)}</s>${pill}`;
     }
   }
   if (game.released) return `<span class="year">${escapeHTML(game.released)}</span>`;
   if (game.rating) return `<span class="star">★</span> ${game.rating.toFixed(1)}`;
-  return "";
+  return " ";
 }
 function actionLabel(game) {
   if (game.tag === "free") return "◆ Ottieni gratis";
@@ -447,28 +445,28 @@ function cardHTML(game) {
   const cover = game.image
     ? `<img src="${escapeAttr(game.image)}" alt="" loading="lazy" />`
     : `<div class="cover-fallback">◆</div>`;
-  const tagLabel = TAG_LABEL[game.tag] || "";
-  const meta = game.genres && game.genres.length ? game.genres.slice(0, 2).join(" · ") : (game.store || "");
+  const tagLabel = TAG_LABEL[game.tag] || " ";
+  const meta = game.genres && game.genres.length ? game.genres.slice(0, 2).join(" · ") : (game.store || " ");
   const score = (game.tag !== "free" && game.tag !== "deal" && game.rating)
-    ? `<span class="card-score">★ ${game.rating.toFixed(1)}</span>` : "";
+    ? `<span class="card-score">★ ${game.rating.toFixed(1)}</span>` : " ";
   const gameData = escapeAttr(JSON.stringify(game));
   return `<article class="card" data-id="${escapeAttr(game.id)}" data-tag="${game.tag || ""}">
-    <div class="card-cover">${cover}${tagLabel ? `<span class="card-tag ${TAG_CLASS[game.tag] || ""}">${tagLabel}</span>` : ""}${score}</div>
-    <div class="card-body">
-      <p class="card-meta">${escapeHTML(meta)}</p>
-      <p class="card-title">${escapeHTML(game.title)}</p>
-      <p class="card-price">${priceLine(game)}</p>
-      <button class="btn btn-primary" data-game='${gameData}'>${actionLabel(game)}</button>
-    </div>
-  </article>`;
+  <div class="card-cover">${cover}${tagLabel ? `<span class="card-tag ${TAG_CLASS[game.tag] || " "}">${tagLabel}</span>` : " "}${score}</div>
+  <div class="card-body">
+    <p class="card-meta">${escapeHTML(meta)}</p>
+    <p class="card-title">${escapeHTML(game.title)}</p>
+    <p class="card-price">${priceLine(game)}</p>
+    <button class="btn btn-primary" data-game='${gameData}'>${actionLabel(game)}</button>
+  </div>
+</article>`;
 }
 function renderGrid(elId, games, append = false) {
   const el = document.getElementById(elId);
   if (!el) return;
   const seenKeys = new Set();
-  if (append) el.querySelectorAll(".card[data-id]").forEach(c => seenKeys.add(`${c.dataset.tag || ""}-${c.dataset.id}`));
+  if (append) el.querySelectorAll(".card[data-id]").forEach(c => seenKeys.add(`${c.dataset.tag || " "}-${c.dataset.id}`));
   const uniqueGames = (games || []).filter(g => {
-    const key = `${g.tag || ""}-${g.id}`;
+    const key = `${g.tag || " "}-${g.id}`;
     if (seenKeys.has(key)) return false;
     seenKeys.add(key); return true;
   });
@@ -476,7 +474,7 @@ function renderGrid(elId, games, append = false) {
     el.innerHTML = `<div class="empty-state">Niente da mostrare — torna più tardi.</div>`;
     return;
   }
-  const html = uniqueGames.map(cardHTML).join("");
+  const html = uniqueGames.map(cardHTML).join(" ");
   if (append) el.insertAdjacentHTML("beforeend", html);
   else el.innerHTML = html;
 }
@@ -485,21 +483,21 @@ function renderSkeleton(elId, count = 6) {
   if (!el) return;
   el.innerHTML = Array.from({ length: count }).map(() =>
     `<div class="card skeleton"><div class="card-cover"></div><div class="card-body"><div class="sk-line w90"></div><div class="sk-line w70"></div><div class="sk-line w40"></div></div></div>`
-  ).join("");
+  ).join(" ");
 }
 const NEWS_MAP = {};
 function newsCardHTML(item) {
-  const cover = item.image ? `<img src="${escapeAttr(item.image)}" alt="" loading="lazy" />` : "";
-  const langBadge = item.lang ? `<span class="lang-badge lang-${escapeAttr(item.lang)}">${escapeHTML(String(item.lang).toUpperCase())}</span>` : "";
+  const cover = item.image ? `<img src="${escapeAttr(item.image)}" alt=" " loading="lazy" />` : " ";
+  const langBadge = item.lang ? `<span class="lang-badge lang-${escapeAttr(item.lang)}">${escapeHTML(String(item.lang).toUpperCase())}</span>` : " ";
   const safeId = encodeURIComponent(item.id);
   return `<div class="news-card" data-news-id="${safeId}">
-    ${cover}
-    <div class="news-card-body">
-      <p class="news-title">${escapeHTML(item.title)}${langBadge}</p>
-      <p class="news-summary">${escapeHTML(item.summary || "")}</p>
-      <p class="news-date">${formatDate(item.published)} · ${escapeHTML(item.source || "")}</p>
-    </div>
-  </div>`;
+  ${cover}
+  <div class="news-card-body">
+    <p class="news-title">${escapeHTML(item.title)}${langBadge}</p>
+    <p class="news-summary">${escapeHTML(item.summary || " ")}</p>
+    <p class="news-date">${formatDate(item.published)} · ${escapeHTML(item.source || " ")}</p>
+  </div>
+</div>`;
 }
 function renderNews(items, elId = "news-list") {
   const el = document.getElementById(elId);
@@ -509,14 +507,14 @@ function renderNews(items, elId = "news-list") {
     return;
   }
   items.forEach(item => { NEWS_MAP[item.id] = item; });
-  el.innerHTML = items.map(newsCardHTML).join("");
+  el.innerHTML = items.map(newsCardHTML).join(" ");
 }
 function renderNewsSkeleton(elId = "news-list") {
   const el = document.getElementById(elId);
   if (!el) return;
   el.innerHTML = Array.from({ length: 5 }).map(() =>
     `<div class="news-card skeleton"><div class="news-card-body"><div class="sk-line w70"></div><div class="sk-line w90"></div><div class="sk-line w40"></div></div></div>`
-  ).join("");
+  ).join(" ");
 }
 // ---------------------------------------------------------------------------
 // Ticker & stats
@@ -548,7 +546,7 @@ function animateCount(el, target) {
 // ---------------------------------------------------------------------------
 function sheetCoverHTML(image) {
   return image
-    ? `<img src="${escapeAttr(image)}" alt="" style="width:100%;height:100%;object-fit:cover;" />`
+    ? `<img src="${escapeAttr(image)}" alt=" " style="width:100%;height:100%;object-fit:cover;" />`
     : `<div class="cover-fallback" style="background:${PLACEHOLDER_GRADIENT};">◆</div>`;
 }
 function showSheet() {
@@ -576,19 +574,19 @@ async function openDetailSheet(game) {
   const stores = document.getElementById("sheetStores");
   showSheet();
   title.textContent = game.title;
-  meta.textContent = (game.genres && game.genres.length) ? game.genres.slice(0, 2).join(" · ") : (game.store || "");
+  meta.textContent = (game.genres && game.genres.length) ? game.genres.slice(0, 2).join(" · ") : (game.store || " ");
   desc.textContent = "Caricamento…";
-  ratings.innerHTML = "";
-  stores.innerHTML = "";
+  ratings.innerHTML = " ";
+  stores.innerHTML = " ";
   cover.innerHTML = sheetCoverHTML(game.image);
   if (game.tag === "free") {
     desc.textContent = stripHTML(game.description) || stripHTML(game.instructions) || "Nessuna descrizione disponibile.";
     if (game.stores && game.stores.length > 0) {
       stores.innerHTML = game.stores.map(s =>
-        `<button class="btn btn-primary store-btn ${escapeAttr(s.cls || "")}" data-url="${escapeAttr(s.url)}">${escapeHTML(s.icon || "◆")} Apri su ${escapeHTML(s.name)}</button>`
-      ).join("");
+        `<button class="btn btn-primary store-btn ${escapeAttr(s.cls || " ")}" data-url="${escapeAttr(s.url)}">${escapeHTML(s.icon || "◆")} Apri su ${escapeHTML(s.name)}</button>`
+      ).join(" ");
     } else if (game.storeUrl) {
-      stores.innerHTML = `<button class="btn btn-primary store-btn ${escapeAttr(game.storeClass || "")}" data-url="${escapeAttr(game.storeUrl)}">${escapeHTML(game.storeIcon || "◆")} Apri su ${escapeHTML(game.store)}</button>`;
+      stores.innerHTML = `<button class="btn btn-primary store-btn ${escapeAttr(game.storeClass || " ")}" data-url="${escapeAttr(game.storeUrl)}">${escapeHTML(game.storeIcon || "◆")} Apri su ${escapeHTML(game.store)}</button>`;
     } else if (game.url) {
       stores.innerHTML = `<button class="btn btn-primary store-btn" data-url="${escapeAttr(game.url)}">Dettagli</button>`;
     }
@@ -598,7 +596,7 @@ async function openDetailSheet(game) {
   if (game.tag === "deal") {
     desc.textContent = stripHTML(game.description) || "Nessuna descrizione disponibile.";
     if (game.url) {
-      stores.innerHTML = `<button class="btn btn-primary store-btn ${escapeAttr(game.storeClass || "")}" data-url="${escapeAttr(game.url)}">% Acquista su ${escapeHTML(game.store)}</button>`;
+      stores.innerHTML = `<button class="btn btn-primary store-btn ${escapeAttr(game.storeClass || " ")}" data-url="${escapeAttr(game.url)}">% Acquista su ${escapeHTML(game.store)}</button>`;
     }
     attachSheetClose();
     return;
@@ -609,16 +607,16 @@ async function openDetailSheet(game) {
     const detail = detailResult.value;
     const realStores = storesResult.status === "fulfilled" ? storesResult.value : [];
     desc.textContent = bestDescription(detail, game) || "Descrizione non disponibile in questa lingua.";
-    let ratingsHTML = "";
+    let ratingsHTML = " ";
     if (detail.metacritic) ratingsHTML += `<span class="rating-badge metacritic">Metacritic ${detail.metacritic}</span>`;
     if (detail.rating) ratingsHTML += `<span class="rating-badge rawg">RAWG ${detail.rating.toFixed(1)}</span>`;
     if (detail.released) ratingsHTML += `<span class="rating-badge">Uscita ${detail.released.slice(0, 4)}</span>`;
     ratings.innerHTML = ratingsHTML;
-    let storesHTML = "";
+    let storesHTML = " ";
     if (realStores.length > 0) {
       const seenStoreNames = new Set();
       for (const s of realStores.slice(0, 4)) {
-        const url = s.url || "";
+        const url = s.url || " ";
         if (!url) continue;
         const storeInfo = getStoreInfo(s.store_id);
         if (seenStoreNames.has(storeInfo.name)) continue;
@@ -655,7 +653,7 @@ function openNewsSheet(item) {
   ratings.innerHTML = badgesHTML;
   stores.innerHTML = item.link && item.link !== "#"
     ? `<button class="btn btn-outline store-btn" data-url="${escapeAttr(item.link)}">◆ Leggi l'articolo completo</button>`
-    : "";
+    : " ";
   cover.innerHTML = sheetCoverHTML(item.image);
   desc.innerHTML = formatArticleHTML(item.content || item.summary);
   attachSheetClose();
@@ -666,24 +664,21 @@ function openNewsSheet(item) {
 const loaded = new Set();
 async function loadHome(force = false) {
   if (loaded.has("home") && !force) return;
-  renderSkeleton("grid-home", 6);
   renderSkeleton("grid-free_games-home", 6);
   renderSkeleton("grid-hot_deals-home", 6);
   renderNewsSkeleton("news-list-home");
   const data = await API.home();
-  renderGrid("grid-home", data.new_releases);
   renderGrid("grid-free_games-home", data.free_games);
   renderGrid("grid-hot_deals-home", data.hot_deals);
   renderNews(data.news, "news-list-home");
   updateTicker(data.news);
-  animateCount(document.getElementById("statNew"), data.new_releases.length);
   animateCount(document.getElementById("statFree"), data.free_games.length);
   animateCount(document.getElementById("statDeals"), data.hot_deals.length);
   loaded.add("home");
 }
 function toggleLoadMoreBtn(id, show) {
   const btn = document.getElementById(id);
-  if (btn) btn.style.display = show ? "" : "none";
+  if (btn) btn.style.display = show ? " " : "none";
 }
 let newReleasesPage = 1;
 async function loadNewReleases(force = false) {
@@ -759,7 +754,7 @@ async function loadNews(force = false) {
   } catch (e) { renderNews([], "news-list"); }
 }
 let currentGenre = "all";
-let currentQuery = "";
+let currentQuery = " ";
 let discoverPage = 1;
 async function loadDiscover(force = false) {
   if (loaded.has("discover") && !force && !currentQuery) return;
@@ -787,9 +782,9 @@ async function loadGenreChips() {
     const genres = await API.genres();
     const all = [{ slug: "all", name: "Tutti" }, ...genres];
     chipsWrap.innerHTML = all.map((g, i) =>
-      `<button class="chip ${i === 0 ? "active" : ""}" data-genre="${escapeAttr(g.slug)}">${escapeHTML(g.name)}</button>`
-    ).join("");
-  } catch (e) { chipsWrap.innerHTML = ""; }
+      `<button class="chip ${i === 0 ? "active" : " "}" data-genre="${escapeAttr(g.slug)}">${escapeHTML(g.name)}</button>`
+    ).join(" ");
+  } catch (e) { chipsWrap.innerHTML = " "; }
 }
 const SECTION_LOADERS = {
   home: loadHome,
@@ -846,12 +841,12 @@ document.querySelector(".content").addEventListener("click", (e) => {
       const game = JSON.parse(btn.dataset.game);
       haptic("medium");
       openDetailSheet(game);
-    } catch (err) { console.error("Parse game error:", err); }
+    } catch (err) { console.error("Parse game error: ", err); }
     return;
   }
   const newsCard = e.target.closest(".news-card");
   if (newsCard) {
-    const newsId = decodeURIComponent(newsCard.dataset.newsId || "");
+    const newsId = decodeURIComponent(newsCard.dataset.newsId || " ");
     const item = NEWS_MAP[newsId];
     if (item) { haptic("medium"); openNewsSheet(item); }
   }
